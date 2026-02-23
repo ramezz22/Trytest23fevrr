@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Notre 1 An d'Amour 💕</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#080205;overflow:hidden;font-family:'Cormorant Garamond',serif;user-select:none;}
+  #canvas-wrap{position:fixed;inset:0;cursor:pointer;}
+  canvas{display:block;}
+
+  #ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;z-index:10;}
+
+  .top-msg{margin-top:24px;text-align:center;animation:fadeDown 1.4s ease both;}
+  .date-line{font-size:.78rem;letter-spacing:6px;text-transform:uppercase;color:#c9a96e;margin-bottom:8px;}
+  .title{font-family:'Playfair Display',serif;font-size:clamp(1.5rem,4vw,2.8rem);font-style:italic;color:#fdf6f0;text-shadow:0 0 60px rgba(232,80,122,.6);line-height:1.2;}
+  .hint{position:absolute;bottom:36px;font-size:clamp(.85rem,2vw,1.1rem);color:rgba(249,168,196,.8);font-style:italic;letter-spacing:2px;text-align:center;animation:pulse 2s ease-in-out infinite;padding:0 20px;}
+
+  @keyframes pulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-24px);}to{opacity:1;transform:none;}}
+
+  #blown-overlay{
+    position:fixed;inset:0;z-index:50;background:rgba(6,1,4,.93);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:30px;opacity:0;pointer-events:none;transition:opacity 1.2s ease;
+  }
+  #blown-overlay.show{opacity:1;pointer-events:all;}
+  #blown-overlay h2{
+    font-family:'Playfair Display',serif;font-style:italic;
+    font-size:clamp(2rem,6vw,4.2rem);color:#fdf6f0;
+    text-shadow:0 0 80px #e8507a,0 0 160px #e8507a;
+    margin-bottom:18px;animation:heartGlow 2s ease-in-out infinite;
+  }
+  @keyframes heartGlow{
+    0%,100%{text-shadow:0 0 40px #e8507a,0 0 80px #e8507a;}
+    50%{text-shadow:0 0 90px #f9a8c4,0 0 180px #f9a8c4,0 0 260px #e8507a;}
+  }
+  #blown-overlay p{font-size:clamp(.95rem,2.4vw,1.35rem);color:#c9a96e;font-style:italic;font-weight:300;line-height:1.9;max-width:520px;margin-bottom:28px;}
+  #blown-overlay .hearts{font-size:2.8rem;animation:beat 1.2s ease-in-out infinite;}
+  @keyframes beat{0%,100%{transform:scale(1);}50%{transform:scale(1.25);}}
+  .relight-btn{
+    margin-top:24px;padding:12px 38px;background:transparent;border:2px solid #e8507a;
+    color:#f9a8c4;font-family:'Cormorant Garamond',serif;font-size:1rem;
+    letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:40px;transition:all .3s;
+  }
+  .relight-btn:hover{background:#e8507a;color:#fff;}
+  #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:40;}
+</style>
+</head>
+<body>
+<div id="canvas-wrap"><canvas id="c"></canvas></div>
+<canvas id="confetti-canvas"></canvas>
+
+<div id="ui">
+  <div class="top-msg">
+    <div class="date-line">23 Février — Un an de bonheur partagé</div>
+    <h1 class="title">Un an de toi,<br>un an de nous 💕</h1>
+  </div>
+  <div class="hint" id="hint">✦ Clique sur le gâteau pour souffler les 365 bougies ✦</div>
+</div>
+
+<div id="blown-overlay">
+  <h2>Tu es mon tout 💕</h2>
+  <p>
+    Il y a un an, ma vie a changé pour toujours.<br>
+    Chaque jour avec toi est un cadeau inestimable,<br>
+    chaque sourire que tu m'offres reste gravé dans mon cœur pour toujours.<br><br>
+    <em>Joyeux anniversaire de notre amour, mon étoile.</em>
+  </p>
+  <div class="hearts">💕 💖 💕</div>
+  <button class="relight-btn" id="relight-btn">Rallumer les bougies ✦</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════
+   RENDERER & SCENE
+═══════════════════════════════════════════ */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x080205);
+scene.fog = new THREE.FogExp2(0x080205, 0.022);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+camera.position.set(0, 10, 24);
+camera.lookAt(0, 4, 0);
+
+function resize(){
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
+
+/* ═══════════════════════════════════════════
+   LIGHTS
+═══════════════════════════════════════════ */
+scene.add(new THREE.AmbientLight(0x2a0812, 0.8));
+
+const sun = new THREE.DirectionalLight(0xfff5e0, 1.0);
+sun.position.set(6, 18, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -16; sun.shadow.camera.right = 16;
+sun.shadow.camera.top = 16;   sun.shadow.camera.bottom = -16;
+sun.shadow.camera.far = 60;
+scene.add(sun);
+
+const rim = new THREE.DirectionalLight(0x4060cc, 0.35);
+rim.position.set(-8, 5, -12);
+scene.add(rim);
+
+const fill = new THREE.PointLight(0xff7040, 0.5, 40);
+fill.position.set(0, 5, 15);
+scene.add(fill);
+
+const candleGlow = new THREE.PointLight(0xffaa33, 4.0, 20);
+candleGlow.position.set(0, 9.5, 0);
+scene.add(candleGlow);
+
+/* ═══════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════ */
+const tableGroup = new THREE.Group();
+// Surface
+const surface = new THREE.Mesh(
+  new THREE.CylinderGeometry(13, 13, 0.3, 64),
+  new THREE.MeshStandardMaterial({color:0x7a4020, roughness:0.88, metalness:0.05})
+);
+surface.receiveShadow = true;
+tableGroup.add(surface);
+
+// Tablecloth
+const tcloth = new THREE.Mesh(
+  new THREE.CylinderGeometry(12.8, 12.8, 0.08, 64),
+  new THREE.MeshStandardMaterial({color:0xfcf0f5, roughness:0.95})
+);
+tcloth.position.y = 0.19;
+tcloth.receiveShadow = true;
+tableGroup.add(tcloth);
+tableGroup.position.y = -0.15;
+scene.add(tableGroup);
+
+/* ═══════════════════════════════════════════
+   CAKE BUILDER
+═══════════════════════════════════════════ */
+const cakeGroup = new THREE.Group();
+scene.add(cakeGroup);
+
+function makeCakeTier(rTop, rBot, h, yBase, bodyColor, frostColor, pearlColor){
+  const g = new THREE.Group();
+
+  // Body
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(rTop, rBot, h, 80, 3),
+    new THREE.MeshStandardMaterial({color:bodyColor, roughness:0.75})
+  );
+  body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+
+  // Top frosting layer
+  const frostMat = new THREE.MeshStandardMaterial({color:frostColor, roughness:0.55});
+  const topFrost = new THREE.Mesh(
+    new THREE.CylinderGeometry(rTop + 0.1, rTop + 0.1, 0.18, 80),
+    frostMat
+  );
+  topFrost.position.y = h/2 + 0.09;
+  topFrost.castShadow = true;
+  g.add(topFrost);
+
+  // Drips around top edge
+  const dripN = Math.round(rTop * 8);
+  for(let i = 0; i < dripN; i++){
+    const a = (i/dripN)*Math.PI*2;
+    const cx = Math.cos(a)*(rTop + 0.06);
+    const cz = Math.sin(a)*(rTop + 0.06);
+
+    const drop = new THREE.Mesh(new THREE.SphereGeometry(0.13,8,8), frostMat);
+    drop.position.set(cx, h/2-0.05, cz);
+    drop.scale.y = 1.5;
+    drop.castShadow = true;
+    g.add(drop);
+
+    const tail = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.04, 0.32, 7),
+      frostMat
+    );
+    tail.position.set(cx, h/2-0.4, cz);
+    g.add(tail);
+  }
+
+  // Pearl decorations around equator
+  const pearlMat = new THREE.MeshStandardMaterial({color:pearlColor, roughness:0.25, metalness:0.6});
+  const pearlN = Math.round(rTop * 10);
+  for(let i = 0; i < pearlN; i++){
+    const a = (i/pearlN)*Math.PI*2;
+    const pearl = new THREE.Mesh(new THREE.SphereGeometry(0.1,8,8), pearlMat);
+    pearl.position.set(Math.cos(a)*(rTop+0.02), 0, Math.sin(a)*(rTop+0.02));
+    pearl.castShadow = true;
+    g.add(pearl);
+  }
+
+  g.position.y = yBase + h/2;
+  return g;
+}
+
+// Three tiers
+const H1=3.4, R1=5.2;
+const H2=2.9, R2=3.7;
+const H3=2.5, R3=2.3;
+
+const y1 = 0.18;           // sits on table
+const y2 = y1 + H1;
+const y3 = y2 + H2;
+
+const tier1 = makeCakeTier(R1, R1*1.02, H1, y1, 0xf4c69a, 0xfff4f8, 0xffcc44);
+const tier2 = makeCakeTier(R2, R2*1.02, H2, y2, 0xf8a8c0, 0xfde8f2, 0xff6699);
+const tier3 = makeCakeTier(R3, R3*1.02, H3, y3, 0xfde898, 0xfffde0, 0xe8507a);
+
+cakeGroup.add(tier1, tier2, tier3);
+
+// Fondant ribbons
+function addRibbon(r, y, color){
+  const mat = new THREE.MeshStandardMaterial({color, roughness:0.5, metalness:0.2});
+  const geo = new THREE.TorusGeometry(r, 0.08, 8, 80);
+  const t = new THREE.Mesh(geo, mat);
+  t.rotation.x = Math.PI/2;
+  t.position.y = y;
+  t.castShadow = true;
+  cakeGroup.add(t);
+}
+addRibbon(R1+0.02, y1+H1*0.35, 0xe86a9a);
+addRibbon(R1+0.02, y1+H1*0.7,  0xffcc44);
+addRibbon(R2+0.02, y2+H2*0.45, 0xffcc44);
+addRibbon(R3+0.02, y3+H3*0.4,  0xe86a9a);
+
+// Heart topper
+const hShape = new THREE.Shape();
+hShape.moveTo(0, 0.4);
+hShape.bezierCurveTo(0,.9,.9,.9,.9,0);
+hShape.bezierCurveTo(.9,-.4,0,-.9,0,-1.3);
+hShape.bezierCurveTo(0,-.9,-.9,-.4,-.9,0);
+hShape.bezierCurveTo(-.9,.9,0,.9,0,0.4);
+const heartMesh = new THREE.Mesh(
+  new THREE.ExtrudeGeometry(hShape,{depth:0.18,bevelEnabled:true,bevelThickness:0.08,bevelSize:0.06}),
+  new THREE.MeshStandardMaterial({color:0xe8507a,roughness:0.3,metalness:0.15,emissive:0xe8507a,emissiveIntensity:0.3})
+);
+heartMesh.scale.set(0.42,0.42,0.42);
+heartMesh.position.set(-0.38, y3+H3+0.45, 0);
+heartMesh.castShadow = true;
+cakeGroup.add(heartMesh);
+
+/* ═══════════════════════════════════════════
+   365 CANDLES — Sunflower / Fibonacci
+═══════════════════════════════════════════ */
+const TOTAL = 365;
+const candles = [];
+
+const GOLDEN = Math.PI*(3 - Math.sqrt(5));
+
+function sunflowerPoints(n, maxR, yFloor){
+  const pts = [];
+  for(let i=0;i<n;i++){
+    const r = maxR * Math.sqrt((i+0.5)/n);
+    const th = i * GOLDEN;
+    pts.push(new THREE.Vector3(Math.cos(th)*r, yFloor, Math.sin(th)*r));
+  }
+  return pts;
+}
+
+// Distribute across tiers
+const n3 = 52, n2 = 113, n1 = TOTAL - n3 - n2;
+const pts1 = sunflowerPoints(n1, R1-0.55, y1+H1+0.18+0.28);
+const pts2 = sunflowerPoints(n2, R2-0.45, y2+H2+0.18+0.28);
+const pts3 = sunflowerPoints(n3, R3-0.38, y3+H3+0.18+0.28);
+const allPts = [...pts1, ...pts2, ...pts3];
+
+// Shared geometries & materials
+const candleBodyGeo = new THREE.CylinderGeometry(0.058, 0.064, 0.7, 8);
+const wickGeo       = new THREE.CylinderGeometry(0.009, 0.009, 0.16, 6);
+const flameGeo      = new THREE.ConeGeometry(0.075, 0.24, 8);
+const flameCoreGeo  = new THREE.ConeGeometry(0.034, 0.14, 8);
+
+const candleMats = [
+  new THREE.MeshStandardMaterial({color:0xfdeaee, roughness:0.7}),
+  new THREE.MeshStandardMaterial({color:0xfdedb8, roughness:0.7}),
+  new THREE.MeshStandardMaterial({color:0xd8f0ff, roughness:0.7}),
+];
+const wickMat = new THREE.MeshStandardMaterial({color:0x1a0a06, roughness:1});
+
+allPts.forEach((pos, i) => {
+  const g = new THREE.Group();
+
+  const body = new THREE.Mesh(candleBodyGeo, candleMats[i % 3]);
+  body.castShadow = true;
+  g.add(body);
+
+  const wick = new THREE.Mesh(wickGeo, wickMat);
+  wick.position.y = 0.35 + 0.08;
+  g.add(wick);
+
+  const flameMat = new THREE.MeshStandardMaterial({
+    color:0xffee55, emissive:0xffaa00, emissiveIntensity:2.5,
+    transparent:true, opacity:0.95, roughness:0.5
+  });
+  const coreMat = new THREE.MeshStandardMaterial({
+    color:0xffffff, emissive:0xffffff, emissiveIntensity:3.5,
+    transparent:true, opacity:0.92
+  });
+
+  const flame = new THREE.Mesh(flameGeo, flameMat);
+  flame.position.y = 0.35 + 0.15 + 0.12;
+
+  const core = new THREE.Mesh(flameCoreGeo, coreMat);
+  core.position.y = 0.35 + 0.15 + 0.10;
+
+  g.add(flame, core);
+
+  // Tiny point light for every 10th candle
+  let fl = null;
+  if(i % 10 === 0){
+    fl = new THREE.PointLight(0xffaa22, 0.22, 2.8);
+    fl.position.y = 0.35+0.3;
+    g.add(fl);
+  }
+
+  g.position.copy(pos);
+  cakeGroup.add(g);
+
+  candles.push({
+    group: g, flame, core, fl,
+    lit: true,
+    phase: Math.random()*Math.PI*2,
+    blownAt: -1
+  });
+});
+
+/* ═══════════════════════════════════════════
+   INTERACTION
+═══════════════════════════════════════════ */
+let blown = false;
+const raycaster = new THREE.Raycaster();
+const mouse2 = new THREE.Vector2();
+
+// Click zone: big invisible cylinder over cake
+const hitZone = new THREE.Mesh(
+  new THREE.CylinderGeometry(6.5, 6.5, 13, 32),
+  new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide})
+);
+hitZone.position.y = 5;
+scene.add(hitZone);
+
+document.getElementById('canvas-wrap').addEventListener('click', e => {
+  if(blown) return;
+  mouse2.x = (e.clientX/window.innerWidth)*2-1;
+  mouse2.y = -(e.clientY/window.innerHeight)*2+1;
+  raycaster.setFromCamera(mouse2, camera);
+  const hits = raycaster.intersectObjects([hitZone,...cakeGroup.children], true);
+  if(hits.length > 0) blowAll();
+});
+
+function blowAll(){
+  blown = true;
+  document.getElementById('hint').style.transition='opacity .8s';
+  document.getElementById('hint').style.opacity='0';
+
+  // Stagger blow-out
+  candles.forEach((c, i) => {
+    const delay = Math.random() * 700;
+    setTimeout(()=>{
+      c.lit = false;
+      c.blownAt = performance.now();
+      c.flame.visible = false;
+      c.core.visible = false;
+      if(c.fl) c.fl.intensity = 0;
+    }, delay);
+  });
+
+  // Fade overall glow
+  const t0 = performance.now();
+  const fadeGlow = () => {
+    const p = Math.min((performance.now()-t0)/900, 1);
+    candleGlow.intensity = 4*(1-p);
+    fill.intensity = 0.5*(1-p*0.8);
+    if(p < 1) requestAnimationFrame(fadeGlow);
+  };
+  setTimeout(fadeGlow, 300);
+
+  // Show message
+  setTimeout(() => {
+    document.getElementById('blown-overlay').classList.add('show');
+    startConfetti();
+  }, 1600);
+}
+
+document.getElementById('relight-btn').addEventListener('click', () => {
+  document.getElementById('blown-overlay').classList.remove('show');
+  stopConfetti();
+  blown = false;
+  document.getElementById('hint').style.opacity='1';
+  candles.forEach(c => {
+    c.lit = true; c.blownAt = -1;
+    c.flame.visible = true; c.core.visible = true;
+    if(c.fl) c.fl.intensity = 0.22;
+  });
+  candleGlow.intensity = 4.0;
+  fill.intensity = 0.5;
+});
+
+/* ═══════════════════════════════════════════
+   CONFETTI
+═══════════════════════════════════════════ */
+const cc = document.getElementById('confetti-canvas');
+const cctx = cc.getContext('2d');
+function ccResize(){ cc.width = window.innerWidth; cc.height = window.innerHeight; }
+ccResize(); window.addEventListener('resize', ccResize);
+
+let confOn = false, confParts = [];
+function startConfetti(){
+  confOn = true; confParts = [];
+  for(let i=0;i<240;i++) confParts.push({
+    x:Math.random()*cc.width,
+    y:Math.random()*cc.height-cc.height,
+    r:Math.random()*7+3,
+    c:`hsl(${Math.random()*80+310},80%,65%)`,
+    ta:0, ts:Math.random()*.1+.04,
+    sp:Math.random()*2+1.5
+  });
+  animCC();
+}
+function stopConfetti(){ confOn=false; cctx.clearRect(0,0,cc.width,cc.height); }
+function animCC(){
+  if(!confOn) return;
+  cctx.clearRect(0,0,cc.width,cc.height);
+  confParts.forEach(p=>{
+    p.ta+=p.ts; p.y+=p.sp; const ti=Math.sin(p.ta)*12;
+    if(p.y>cc.height){ p.y=-10; p.x=Math.random()*cc.width; }
+    cctx.beginPath(); cctx.fillStyle=p.c;
+    cctx.ellipse(p.x,p.y,p.r,p.r*.4,ti*Math.PI/180,0,Math.PI*2);
+    cctx.fill();
+  });
+  requestAnimationFrame(animCC);
+}
+
+/* ═══════════════════════════════════════════
+   RENDER LOOP
+═══════════════════════════════════════════ */
+let T = 0;
+function animate(){
+  requestAnimationFrame(animate);
+  T += 0.016;
+
+  // Gentle auto-rotate
+  cakeGroup.rotation.y = T * 0.10;
+
+  // Flame flicker
+  if(!blown){
+    candles.forEach(c => {
+      if(!c.lit) return;
+      const f = Math.sin(T*9+c.phase)*0.07 + Math.sin(T*14+c.phase*1.7)*0.04;
+      c.flame.scale.set(1-f*0.4, 1+f, 1-f*0.4);
+      c.core.scale.set(1-f*0.3, 1+f*0.6, 1-f*0.3);
+      c.flame.material.emissiveIntensity = 2.5+f*4;
+    });
+    candleGlow.intensity = 4.0 + Math.sin(T*5)*0.6;
+  }
+
+  // Heart bob
+  heartMesh.position.y = y3+H3+0.45 + Math.sin(T*1.4)*0.09;
+  heartMesh.rotation.y = Math.sin(T*0.5)*0.25;
+
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
